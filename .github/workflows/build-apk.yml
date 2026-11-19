@@ -50,21 +50,8 @@ jobs:
       - name: 🔧 Patch Kotlin & Compose Compatibility
         working-directory: ./mobile/android
         run: |
-          cat << 'EOF' >> build.gradle
-
-allprojects {
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            freeCompilerArgs += [
-                "-P",
-                "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
-            ]
-        }
-    }
-}
-EOF
-          echo "build.gradle patched with suppressKotlinVersionCompatibilityCheck"
-          tail -n 20 build.gradle
+          python3 -c "open('build.gradle', 'a').write('\nallprojects { tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { kotlinOptions { freeCompilerArgs += [\"-P\", \"plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true\"] } } }\n')"
+          echo "build.gradle patched successfully"
 
       - name: 🐘 Setup Gradle
         uses: gradle/actions/setup-gradle@v3

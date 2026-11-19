@@ -47,6 +47,15 @@ jobs:
         run: |
           npx expo prebuild --platform android --clean
 
+      - name: 🔧 Patch Kotlin 1.9.25 & Compose Compatibility
+        working-directory: ./mobile/android
+        run: |
+          echo "kotlinVersion=1.9.25" >> gradle.properties
+          echo "android.kotlinVersion=1.9.25" >> gradle.properties
+          echo "suppressKotlinVersionCompatibilityCheck=true" >> gradle.properties
+          sed -i 's/1\.9\.24/1.9.25/g' build.gradle || true
+          cat gradle.properties
+
       - name: 🐘 Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
@@ -58,7 +67,7 @@ jobs:
       - name: 🚀 Build Android Debug APK
         working-directory: ./mobile/android
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon -PkotlinVersion=1.9.25 -Pandroid.kotlinVersion=1.9.25 -Pcompose.suppressKotlinVersionCompatibilityCheck=true
 
       - name: 📂 Prepare APK Output
         run: |

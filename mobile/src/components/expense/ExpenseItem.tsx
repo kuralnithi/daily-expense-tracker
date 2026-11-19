@@ -48,6 +48,7 @@ export default function ExpenseItem({ expense, onPress, onDelete, showDate = fal
         <Text style={styles.meta}>
           {expense.category?.name || 'Uncategorized'}
           {showDate ? ` • ${formatTime(expense.created_at)}` : ` • ${formatTime(expense.created_at)}`}
+          {expense.short_term_budget_name ? ` • 💼 ${expense.short_term_budget_name}` : ''}
         </Text>
       </View>
       <View style={styles.right}>

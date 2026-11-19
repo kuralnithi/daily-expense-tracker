@@ -20,6 +20,7 @@ export async function getExpenses(req: Request, res: Response, next: NextFunctio
       startDate: req.query.start_date as string,
       endDate: req.query.end_date as string,
       category_id: req.query.category_id as string,
+      short_term_budget_id: req.query.short_term_budget_id as string,
       type: req.query.type as 'expense' | 'income' | undefined,
       page: parseInt(req.query.page as string) || 1,
       limit: parseInt(req.query.limit as string) || 20,
@@ -46,6 +47,11 @@ export async function getExpenses(req: Request, res: Response, next: NextFunctio
       params.push(filters.category_id);
       paramIdx++;
     }
+    if (filters.short_term_budget_id) {
+      conditions.push(`e.short_term_budget_id = $${paramIdx}`);
+      params.push(filters.short_term_budget_id);
+      paramIdx++;
+    }
     if (filters.type) {
       conditions.push(`e.type = $${paramIdx}`);
       params.push(filters.type);
@@ -66,9 +72,11 @@ export async function getExpenses(req: Request, res: Response, next: NextFunctio
       `SELECT e.*, 
               c.name as category_name, 
               c.icon as category_icon, 
-              c.color as category_color
+              c.color as category_color,
+              stb.name as short_term_budget_name
        FROM expenses e
        LEFT JOIN categories c ON e.category_id = c.id
+       LEFT JOIN short_term_budgets stb ON e.short_term_budget_id = stb.id
        WHERE ${whereClause}
        ORDER BY e.date DESC, e.created_at DESC
        LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
@@ -101,12 +109,13 @@ export async function createExpense(req: Request, res: Response, next: NextFunct
     const dto: CreateExpenseDto = req.body;
 
     const result = await query<Expense>(
-      `INSERT INTO expenses (user_id, category_id, amount, description, note, date, type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO expenses (user_id, category_id, short_term_budget_id, amount, description, note, date, type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         userId,
         dto.category_id || null,
+        dto.short_term_budget_id || null,
         dto.amount,
         dto.description || null,
         dto.note || null,
@@ -115,11 +124,16 @@ export async function createExpense(req: Request, res: Response, next: NextFunct
       ]
     );
 
-    // Fetch with category info
+    // Fetch with category and budget info
     const expense = await query<Expense>(
-      `SELECT e.*, c.name as category_name, c.icon as category_icon, c.color as category_color
+      `SELECT e.*, 
+              c.name as category_name, 
+              c.icon as category_icon, 
+              c.color as category_color,
+              stb.name as short_term_budget_name
        FROM expenses e
        LEFT JOIN categories c ON e.category_id = c.id
+       LEFT JOIN short_term_budgets stb ON e.short_term_budget_id = stb.id
        WHERE e.id = $1`,
       [result.rows[0].id]
     );
@@ -154,6 +168,7 @@ export async function updateExpense(req: Request, res: Response, next: NextFunct
     if (dto.note !== undefined) { setClauses.push(`note = $${idx}`); params.push(dto.note); idx++; }
     if (dto.date !== undefined) { setClauses.push(`date = $${idx}`); params.push(dto.date); idx++; }
     if (dto.category_id !== undefined) { setClauses.push(`category_id = $${idx}`); params.push(dto.category_id); idx++; }
+    if (dto.short_term_budget_id !== undefined) { setClauses.push(`short_term_budget_id = $${idx}`); params.push(dto.short_term_budget_id); idx++; }
     if (dto.type !== undefined) { setClauses.push(`type = $${idx}`); params.push(dto.type); idx++; }
 
     if (setClauses.length === 0) {
@@ -169,9 +184,14 @@ export async function updateExpense(req: Request, res: Response, next: NextFunct
     );
 
     const updated = await query<Expense>(
-      `SELECT e.*, c.name as category_name, c.icon as category_icon, c.color as category_color
+      `SELECT e.*, 
+              c.name as category_name, 
+              c.icon as category_icon, 
+              c.color as category_color,
+              stb.name as short_term_budget_name
        FROM expenses e
        LEFT JOIN categories c ON e.category_id = c.id
+       LEFT JOIN short_term_budgets stb ON e.short_term_budget_id = stb.id
        WHERE e.id = $1`,
       [id]
     );

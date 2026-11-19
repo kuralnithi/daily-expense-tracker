@@ -24,6 +24,8 @@ export interface Expense {
   id: string;
   user_id: string;
   category_id?: string;
+  short_term_budget_id?: string;
+  short_term_budget_name?: string;
   category?: Category;
   amount: number;
   description?: string;
@@ -32,6 +34,47 @@ export interface Expense {
   type: 'expense' | 'income';
   created_at: string;
   updated_at: string;
+}
+
+export interface ShortTermBudget {
+  id: string;
+  user_id: string;
+  name: string;
+  total_amount: number;
+  description?: string;
+  color: string;
+  icon: string;
+  start_date: string;
+  end_date?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  total_spent?: number;
+  remaining_amount?: number;
+  percentage_used?: number;
+  expense_count?: number;
+  expenses?: Expense[];
+}
+
+export interface CreateShortTermBudgetDto {
+  name: string;
+  total_amount: number;
+  description?: string;
+  color?: string;
+  icon?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface UpdateShortTermBudgetDto {
+  name?: string;
+  total_amount?: number;
+  description?: string;
+  color?: string;
+  icon?: string;
+  start_date?: string;
+  end_date?: string;
+  is_active?: boolean;
 }
 
 export interface Budget {
@@ -48,6 +91,7 @@ export interface Budget {
 
 export interface CreateExpenseDto {
   category_id?: string;
+  short_term_budget_id?: string;
   amount: number;
   description?: string;
   note?: string;
@@ -57,6 +101,7 @@ export interface CreateExpenseDto {
 
 export interface UpdateExpenseDto {
   category_id?: string;
+  short_term_budget_id?: string;
   amount?: number;
   description?: string;
   note?: string;

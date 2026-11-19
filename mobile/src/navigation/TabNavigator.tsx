@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import ExpensesScreen from '../screens/ExpensesScreen';
+import ShortTermBudgetsScreen from '../screens/ShortTermBudgetsScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { TabParamList } from './types';
@@ -58,6 +59,16 @@ export default function TabNavigator() {
             <MaterialIcons name="receipt-long" size={size} color={color} />
           ),
           tabBarLabel: 'Expenses',
+        }}
+      />
+      <Tab.Screen
+        name="Budgets"
+        component={ShortTermBudgetsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="account-balance-wallet" size={size} color={color} />
+          ),
+          tabBarLabel: 'Budgets',
         }}
       />
       <Tab.Screen

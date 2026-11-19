@@ -17,6 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useExpenseStore } from '../store/expenseStore';
 import { useCategoryStore } from '../store/categoryStore';
 import { useUserStore } from '../store/userStore';
+import { useShortTermBudgetStore } from '../store/shortTermBudgetStore';
 import { summaryApi } from '../api/summary';
 import { ExpenseSummary } from '../types';
 import { RootStackParamList } from '../navigation/types';
@@ -28,6 +29,7 @@ import Card from '../components/common/Card';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import EmptyState from '../components/common/EmptyState';
 import CategoryChart from '../components/charts/CategoryChart';
+import ShortTermBudgetCard from '../components/budget/ShortTermBudgetCard';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
@@ -36,6 +38,7 @@ export default function HomeScreen() {
   const { recentExpenses, fetchRecentExpenses, deleteExpense } = useExpenseStore();
   const { fetchCategories } = useCategoryStore();
   const { name, monthlyBudget, loadUserData } = useUserStore();
+  const { budgets, fetchBudgets } = useShortTermBudgetStore();
 
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
   const [todaySummary, setTodaySummary] = useState<ExpenseSummary | null>(null);
@@ -50,6 +53,7 @@ export default function HomeScreen() {
         fetchRecentExpenses(),
         fetchCategories(),
         loadUserData(),
+        fetchBudgets(),
       ]);
       if (monthSummary?.data) setSummary(monthSummary.data);
       if (daySum?.data) setTodaySummary(daySum.data);
@@ -183,6 +187,42 @@ export default function HomeScreen() {
             </Card>
           </View>
 
+          {/* Short-Term Budgets Section */}
+          <View style={styles.recentHeader}>
+            <Text style={styles.sectionTitle}>Short-Term Budgets</Text>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Budgets' })}>
+              <Text style={styles.seeAll}>
+                {budgets.length > 0 ? `See all (${budgets.length})` : '+ Add'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {budgets.length === 0 ? (
+            <TouchableOpacity
+              style={styles.emptyBudgetBanner}
+              activeOpacity={0.8}
+              onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Budgets' })}
+            >
+              <MaterialIcons name="account-balance-wallet" size={24} color={COLORS.primary} />
+              <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+                <Text style={styles.emptyBudgetTitle}>Add Short-Term Budget</Text>
+                <Text style={styles.emptyBudgetSubtitle}>
+                  Set a budget for trips, events, or shopping & see remaining balance
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.muted} />
+            </TouchableOpacity>
+          ) : (
+            budgets.slice(0, 2).map((b) => (
+              <ShortTermBudgetCard
+                key={b.id}
+                budget={b}
+                onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Budgets' })}
+                onAddExpense={() => navigation.navigate('AddExpense', { prefilledBudgetId: b.id })}
+              />
+            ))
+          )}
+
           {/* Category Breakdown */}
           {summary && summary.by_category && summary.by_category.length > 0 && (
             <Card style={styles.chartCard}>
@@ -295,6 +335,26 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: FONT_SIZES.xs, color: COLORS.muted, marginBottom: 2 },
   statValue: { fontSize: FONT_SIZES.lg, fontWeight: '700' },
   chartCard: { marginBottom: SPACING.md },
+  emptyBudgetBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  emptyBudgetTitle: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  emptyBudgetSubtitle: {
+    fontSize: 11,
+    color: COLORS.muted,
+    marginTop: 2,
+  },
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

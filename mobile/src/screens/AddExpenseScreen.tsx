@@ -19,6 +19,7 @@ import dayjs from 'dayjs';
 
 import { useExpenseStore } from '../store/expenseStore';
 import { useCategoryStore } from '../store/categoryStore';
+import { useShortTermBudgetStore } from '../store/shortTermBudgetStore';
 import { Category } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { formatDateForInput, today } from '../utils/date';
@@ -33,15 +34,20 @@ export default function AddExpenseScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteProps>();
   const editingExpense = (route.params as any)?.expense ?? null;
+  const prefilledBudgetId = (route.params as any)?.prefilledBudgetId ?? null;
 
   const { createExpense, updateExpense } = useExpenseStore();
   const { categories, expenseCategories, incomeCategories, fetchCategories, loading: catLoading } = useCategoryStore();
+  const { budgets, fetchBudgets } = useShortTermBudgetStore();
 
   const [type, setType] = useState<'expense' | 'income'>(editingExpense?.type || 'expense');
   const [amount, setAmount] = useState(editingExpense ? String(editingExpense.amount) : '');
   const [description, setDescription] = useState(editingExpense?.description || '');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     editingExpense?.category || null
+  );
+  const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(
+    editingExpense?.short_term_budget_id || prefilledBudgetId || null
   );
   const [date, setDate] = useState(editingExpense?.date || today());
   const [saving, setSaving] = useState(false);
@@ -50,6 +56,7 @@ export default function AddExpenseScreen() {
 
   useEffect(() => {
     if (categories.length === 0) fetchCategories();
+    fetchBudgets();
   }, []);
 
   useEffect(() => {
@@ -83,6 +90,7 @@ export default function AddExpenseScreen() {
         amount: numAmount,
         description: description.trim() || undefined,
         category_id: selectedCategory?.id,
+        short_term_budget_id: selectedBudgetId || undefined,
         date,
         type,
       };
@@ -92,6 +100,7 @@ export default function AddExpenseScreen() {
       } else {
         await createExpense(payload);
       }
+      fetchBudgets(); // Refresh budgets calculations
       navigation.goBack();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save expense');
@@ -227,6 +236,64 @@ export default function AddExpenseScreen() {
             ))}
           </ScrollView>
         )}
+
+        {/* Short-Term Budget Selector (Only for expenses) */}
+        {type === 'expense' && budgets.length > 0 && (
+          <View style={{ marginTop: SPACING.md }}>
+            <Text style={styles.catLabel}>Link to Short-Term Budget (Optional)</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.budgetChipScroll}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.budgetChip,
+                  selectedBudgetId === null && styles.budgetChipActive,
+                ]}
+                onPress={() => setSelectedBudgetId(null)}
+              >
+                <Text
+                  style={[
+                    styles.budgetChipText,
+                    selectedBudgetId === null && styles.budgetChipTextActive,
+                  ]}
+                >
+                  None (General)
+                </Text>
+              </TouchableOpacity>
+
+              {budgets.map((b) => (
+                <TouchableOpacity
+                  key={b.id}
+                  style={[
+                    styles.budgetChip,
+                    selectedBudgetId === b.id && {
+                      backgroundColor: b.color || COLORS.primary,
+                      borderColor: b.color || COLORS.primary,
+                    },
+                  ]}
+                  onPress={() => setSelectedBudgetId(b.id)}
+                >
+                  <MaterialIcons
+                    name="account-balance-wallet"
+                    size={14}
+                    color={selectedBudgetId === b.id ? '#fff' : COLORS.text}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text
+                    style={[
+                      styles.budgetChipText,
+                      selectedBudgetId === b.id && styles.budgetChipTextActive,
+                    ]}
+                  >
+                    {b.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
 
       {/* Save Button */}
@@ -337,6 +404,33 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     alignItems: 'center',
     minWidth: 68,
+  },
+  budgetChipScroll: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
+    gap: SPACING.xs + 2,
+  },
+  budgetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm + 4,
+    paddingVertical: 7,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: '#fff',
+  },
+  budgetChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  budgetChipText: {
+    fontSize: FONT_SIZES.xs + 1,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  budgetChipTextActive: {
+    color: '#fff',
   },
   footer: {
     padding: SPACING.md,

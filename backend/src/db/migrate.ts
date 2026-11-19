@@ -52,11 +52,40 @@ CREATE TABLE IF NOT EXISTS budgets (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Short-term Budgets table
+CREATE TABLE IF NOT EXISTS short_term_budgets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  total_amount NUMERIC(12, 2) NOT NULL CHECK (total_amount > 0),
+  description TEXT,
+  color VARCHAR(20) DEFAULT '#6366f1',
+  icon VARCHAR(50) DEFAULT 'wallet',
+  start_date DATE DEFAULT CURRENT_DATE,
+  end_date DATE,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure short_term_budget_id exists on expenses
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'expenses' AND column_name = 'short_term_budget_id'
+  ) THEN
+    ALTER TABLE expenses ADD COLUMN short_term_budget_id UUID REFERENCES short_term_budgets(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_expenses_user_id ON expenses(user_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
 CREATE INDEX IF NOT EXISTS idx_expenses_category_id ON expenses(category_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_st_budget ON expenses(short_term_budget_id);
 CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_st_budgets_user_id ON short_term_budgets(user_id);
 `;
 
 interface DefaultCategory {

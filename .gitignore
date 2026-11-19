@@ -1,0 +1,26 @@
+# Root gitignore
+.DS_Store
+Thumbs.db
+*.log
+
+# Node
+node_modules/
+
+# Env files
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+build/
+
+# Expo
+mobile/.expo/
+mobile/android/
+mobile/ios/
+
+# IDE
+.vscode/
+.idea/
+*.swp
